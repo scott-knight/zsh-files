@@ -1,0 +1,39 @@
+#! /bin/zsh
+
+# ##### memcache SERVER #####
+export RAILS_MEM_STORE='mem_cache_store'
+
+function memcachedstart() {
+  brew services start memcached
+}
+alias memstart="memcachedstart"
+alias memcstart="memcachedstart"
+
+function memcachedrestart() {
+  brew services restart memcached
+}
+alias memrestart="memcachedrestart"
+alias memcrestart="memcachedrestart"
+alias memres="memcachedrestart"
+
+function memcachedstop() {
+  brew services stop memcached
+}
+alias memstop="memcachedstop"
+alias memcstop="memcachedstop"
+
+function memclear() {
+  echo 'flush_all' | nc localhost 11211
+}
+alias memflush="memclear"
+
+function memcachei() {
+  echo ''
+  echo '****** MEMCACHE ALIASES **************************************'
+  echo 'memstart   = brew services start memcached          # starts the memcached server'
+  echo 'memstop    = brew services stop memcached           # stops the memcached server'
+  echo 'memrestart = brew services restart memcached        # restarts the memcached server'
+  echo "memclear   = echo 'flush_all' | nc localhost 11211  # clears the memcached server"
+  echo ''
+}
+alias memi="memcachei"

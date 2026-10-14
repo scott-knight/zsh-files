@@ -1,0 +1,75 @@
+#! /bin/zsh
+
+# ##### Podman / Docker aliases #####
+
+alias pm="podman"
+alias docker="pm"
+alias pmstart="pm machine start"
+alias pmstop="pm machine stop"
+alias pmlist="pm machine list"
+alias pmstat="curl -s 'http://localhost:9200/_cat/indices?v'"
+
+alias pmsac='pm stop $(docker ps -a -q)' # stop all
+alias pmdac='docker rm $(docker ps -a -q)'   # delete all
+# alias pmimgs="(docker rmi $(docker images -a -q))" # enabling this causes a system error, not sure why
+alias pmprune="pmdac && docker image prune -a -f"
+alias pmprune="docker system prune -a -f"
+alias pmbp="docker builder prune"
+
+function pmclean () {
+  pm volume rm $(pm volume ls -q) &&
+  pmsac && dprune && dsprune
+}
+
+# DOCKER THINGS =================================================================================
+# Docker containers
+# alias dshow="docker ps -a"                 # list all
+# alias sac='docker stop $(docker ps -a -q)' # stop all
+# alias dac='docker rm $(docker ps -a -q)'   # delete all
+
+# # Stop or delete individual containers, you need the container hash after the call
+# alias dstop="docker stop"                     # stop single
+# alias ddel="docker rm -f"                    # delete single
+
+# # Docker images
+# alias imgs="docker images"     # list all
+# alias dimgs="docker image rm"  # delete
+# alias daimgs="(docker rmi $(docker images -a -q))"
+# alias dprune="dac && docker image prune -a -f"
+# alias dsprune="docker system prune -a -f"
+# alias dbp="docker builder prune"
+
+# # Docker-compose
+# alias dup="docker-compose up"
+# alias ddown="docker-compose down"
+# alias ddownv="docker-compose down --volumes"
+# alias dbuild="dup --build -d"
+# alias drun="docker-compose run --rm"
+
+function dockeri () {
+  # echo '** WARNING ** All Docker aliases are currently disabled!'
+  echo ''
+  echo '****** Docker containers **************************************'
+  echo 'dshow = "docker ps -a"                  # list all'
+  echo 'sac   = docker stop $(docker ps -a -q)  # stop all '
+  echo 'dac   = docker rm $(docker ps -a -q)    # delete all'
+  echo 'dstop = "docker stop"                   # stop single'
+  echo 'ddel  = docker rm -f                    # delete single'
+  echo ''
+  echo '****** Docker images **************************************'
+  echo 'imgs    = docker images                        # list all'
+  echo 'dimgs   = docker image rm                      # delete'
+  echo 'dprune  = dacontrs && docker image prune -a -f # deletes everything when there are containers'
+  echo 'daimgs  = (docker rmi $(docker images -a -q))  # deletes all imgs'
+  echo 'dclean  = docker system prune -a               # DELETES EVERYTHING'
+  echo 'dbp     = docker builder prune                 # Removes cache for the builder stage'
+  echo ''
+  echo '****** Docker THINGS **************************************'
+  echo "docker build --target development .  = build image to the development stage"
+  echo "pmstat = curl -s 'http://localhost:9200/_cat/indices?v'  # shows the status of the Elastic Search index"
+  echo ''
+  echo '****** Elastic Search **************************************'
+  echo 'bundle exec rake elasticsearch:create_indexes # creates the Elastic Search indexes'
+  echo 'bundle exec rake elasticsearch:import_all # imports all the data into the Elastic Search index'
+}
+alias pmi='dockeri'

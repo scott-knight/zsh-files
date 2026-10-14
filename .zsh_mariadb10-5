@@ -1,0 +1,249 @@
+#! /bin/zsh
+# MariaDB 10.5 via Homebrew
+# Sourced from ~/.zshrc
+
+MARIADB_FORMULA="mariadb@10.5"
+MARIADB_PREFIX="${MARIADB_PREFIX:-/opt/homebrew/opt/mariadb@10.5}"
+MARIADB_DATADIR="${MARIADB_DATADIR:-/opt/homebrew/var/mysql}"
+MARIADB_BIN="${MARIADB_PREFIX}/bin"
+
+export PATH="${MARIADB_BIN}:$PATH"
+
+unalias mystart mystop 2>/dev/null
+
+alias findcnf="find /opt/homebrew/etc -name my.cnf"
+
+function mariadbhelps () {
+  echo ''
+  echo '****** MySQL / MariaDB **************************************'
+  echo 'mystart    = start mariadb@10.5 (idempotent)'
+  echo 'mystop     = stop mariadb@10.5 (idempotent)'
+  echo 'mdbr       = reloaddb => wipe data + reinstall empty server'
+  echo 'deletedb   = stop + wipe data dir + brew uninstall mariadb@10.5'
+  echo 'installdb  = brew install (if needed) + init data + mystart'
+  echo 'findcnf    = find /opt/homebrew/etc -name my.cnf'
+  echo ''
+}
+alias myhelps='mariadbhelps'
+alias myhelp='mariadbhelps'
+
+function _mariadb_installed () {
+  [[ -x "${MARIADB_BIN}/mysqld" ]] || brew list --versions "$MARIADB_FORMULA" >/dev/null 2>&1
+}
+
+function _mariadb_ensure_installed () {
+  if _mariadb_installed; then
+    return 0
+  fi
+  echo "Installing ${MARIADB_FORMULA}..."
+  if brew install "$MARIADB_FORMULA"; then
+    echo "Install complete"
+    return 0
+  fi
+  echo "Failed to install ${MARIADB_FORMULA}"
+  return 1
+}
+
+function _mariadb_service_started () {
+  brew services list 2>/dev/null | awk -v f="$MARIADB_FORMULA" '$1 == f && $2 == "started" { found=1 } END { exit !found }'
+}
+
+function _mariadb_ready () {
+  "${MARIADB_BIN}/mysqladmin" ping -uroot -proot --silent 2>/dev/null && return 0
+  "${MARIADB_BIN}/mysqladmin" ping -uroot --silent 2>/dev/null && return 0
+  return 1
+}
+
+# Fresh Homebrew MariaDB often uses socket auth for root until we set a password.
+function _mariadb_ensure_root_password () {
+  if "${MARIADB_BIN}/mysqladmin" ping -uroot -proot --silent 2>/dev/null; then
+    return 0
+  fi
+  "${MARIADB_BIN}/mysql" -uroot -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root'; FLUSH PRIVILEGES;" >/dev/null 2>&1 || \
+    "${MARIADB_BIN}/mysql" -uroot -e "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('root'); FLUSH PRIVILEGES;" >/dev/null 2>&1 || \
+    true
+  "${MARIADB_BIN}/mysqladmin" ping -uroot -proot --silent 2>/dev/null
+}
+
+function _mariadb_datadir_initialized () {
+  [[ -d "$MARIADB_DATADIR" ]] && [[ -f "${MARIADB_DATADIR}/mysql/user.frm" || -f "${MARIADB_DATADIR}/mysql/user.MAD" || -d "${MARIADB_DATADIR}/mysql" ]]
+}
+
+function _mariadb_init_datadir () {
+  mkdir -p "$MARIADB_DATADIR"
+  if _mariadb_datadir_initialized; then
+    return 0
+  fi
+  echo "Initializing ${MARIADB_DATADIR}..."
+  if "${MARIADB_BIN}/mysql_install_db" \
+      --user="$(whoami)" \
+      --basedir="$MARIADB_PREFIX" \
+      --datadir="$MARIADB_DATADIR" \
+      --auth-root-authentication-method=normal >/dev/null 2>&1 || \
+     "${MARIADB_BIN}/mariadb-install-db" \
+      --user="$(whoami)" \
+      --basedir="$MARIADB_PREFIX" \
+      --datadir="$MARIADB_DATADIR" \
+      --auth-root-authentication-method=normal >/dev/null 2>&1; then
+    return 0
+  fi
+  # First brew services start often initializes; allow that path
+  return 0
+}
+
+# Remove every file/dir under the datadir (including dotfiles).
+# Do NOT use shell globs here: with zsh NOMATCH, empty patterns abort the
+# function and deletedb/myreload can report success while data remains.
+function _mariadb_wipe_datadir () {
+  if [[ -d "$MARIADB_DATADIR" ]]; then
+    find "$MARIADB_DATADIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+  fi
+  mkdir -p "$MARIADB_DATADIR" || return 1
+
+  # Confirm empty (only . / .. left)
+  local leftover
+  leftover="$(find "$MARIADB_DATADIR" -mindepth 1 -maxdepth 1 2>/dev/null | head -1)"
+  if [[ -n "$leftover" ]]; then
+    echo "Failed to wipe ${MARIADB_DATADIR} (still contains: ${leftover})" >&2
+    return 1
+  fi
+  return 0
+}
+
+function mystart () {
+  _mariadb_ensure_installed || return 1
+
+  if _mariadb_service_started && _mariadb_ready; then
+    _mariadb_ensure_root_password >/dev/null 2>&1 || true
+    echo "Already started"
+    return 0
+  fi
+
+  echo "Starting..."
+  _mariadb_init_datadir
+
+  if ! brew services start "$MARIADB_FORMULA" >/dev/null 2>&1; then
+    echo "Failed to start"
+    return 1
+  fi
+
+  local i
+  for i in {1..45}; do
+    if _mariadb_ready || _mariadb_ensure_root_password; then
+      echo "Started"
+      return 0
+    fi
+    sleep 1
+  done
+
+  echo "Failed to start"
+  return 1
+}
+
+function mystop () {
+  if ! _mariadb_installed; then
+    echo "Already stopped"
+    return 0
+  fi
+
+  if ! _mariadb_service_started && ! _mariadb_ready; then
+    echo "Already stopped"
+    return 0
+  fi
+
+  echo "Stopping..."
+  if brew services stop "$MARIADB_FORMULA" >/dev/null 2>&1; then
+    echo "Stopped"
+  else
+    echo "Failed to stop"
+    return 1
+  fi
+}
+
+# Wipe data directory, re-init, start empty MariaDB 10.5
+function myreload () {
+  echo "Reloading ${MARIADB_FORMULA} (data wipe + reinit)..."
+  _mariadb_ensure_installed || return 1
+
+  mystop >/dev/null 2>&1 || true
+  if ! _mariadb_wipe_datadir; then
+    echo "Failed to reload (datadir wipe failed)" >&2
+    return 1
+  fi
+  _mariadb_init_datadir
+
+  if ! mystart; then
+    echo "Failed to reload"
+    return 1
+  fi
+  echo "Reload complete"
+}
+alias myreset="myreload"
+alias mdbr="myreload"
+
+function reloaddb () {
+  myreload
+}
+
+# Stop, wipe all DB data, uninstall the Homebrew formula (like removing the image)
+function deletedb () {
+  echo "Stopping ${MARIADB_FORMULA} and deleting data + formula. Please wait..."
+  mystop >/dev/null 2>&1 || true
+  if ! _mariadb_wipe_datadir; then
+    echo "Aborting: datadir wipe failed; formula left installed" >&2
+    return 1
+  fi
+  brew uninstall --force "$MARIADB_FORMULA" >/dev/null 2>&1 || true
+  echo 'Done!'
+  echo ''
+}
+
+function installdb () {
+  echo "Creating and starting ${MARIADB_FORMULA}. Please wait..."
+  _mariadb_ensure_installed || return 1
+  _mariadb_init_datadir
+  mystart
+}
+
+# Default to root/root unless -u/--user or -p/--password already provided
+function _mariadb_cli_as_root () {
+  local cmd="$1"
+  shift
+  local bin="${MARIADB_BIN}/${cmd}"
+  [[ -x "$bin" ]] || bin="$(command -v "$cmd")"
+
+  if [[ -z "$bin" ]]; then
+    echo "${cmd} not found (is ${MARIADB_FORMULA} installed?)" >&2
+    return 1
+  fi
+
+  if ! _mariadb_ready && ! _mariadb_service_started; then
+    echo "${MARIADB_FORMULA} is not running (run mystart first)" >&2
+    return 1
+  fi
+
+  local has_user=0 has_pass=0 arg
+  for arg in "$@"; do
+    case "$arg" in
+      -u*|--user|--user=*) has_user=1 ;;
+      -p*|--password|--password=*) has_pass=1 ;;
+    esac
+  done
+
+  (( has_user )) || set -- -uroot "$@"
+  (( has_pass )) || set -- -proot "$@"
+
+  "$bin" "$@"
+}
+
+function mysql () {
+  _mariadb_cli_as_root mysql "$@"
+}
+
+function mysqladmin () {
+  _mariadb_cli_as_root mysqladmin "$@"
+}
+
+function mysqld () {
+  _mariadb_cli_as_root mysql "$@"
+}

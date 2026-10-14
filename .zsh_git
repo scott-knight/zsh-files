@@ -1,0 +1,63 @@
+#! /bin/zsh
+
+# ##### Git #####
+
+alias gbr="git branch "
+alias gco="git checkout "
+alias gnew="git checkout -b "
+alias gstash="git stash"
+alias gpop="git stash pop"
+alias gdrop="git stash drop"
+alias gdel="git branch -D "
+alias godel="gdel && git push origin --delete $1"
+alias gfetch="git fetch"
+alias gmerge="git merge"
+alias gpull="git pull"
+alias gpush="git push"
+alias glog="git log"
+alias gstat="git status"
+
+# function to delete source and local git branch
+function gitdel(){
+  git push origin --delete $@
+  git branch -D $@
+  git fetch --all --prune
+}
+
+function fixgit () {
+  # mv .git/refs/remotes/origin/feature .git/refs/remotes/origin/Feature
+  # mv .git/refs/remotes/origin/bug .git/refs/remotes/origin/Bug
+  git gc --prune=now && git remote prune origin
+}
+alias gprune="fixgit"
+# https://stackoverflow.com/questions/10068640/git-error-on-git-pull-unable-to-update-local-ref
+
+function gits () {
+  echo ''
+  echo '****** GIT commands  **************************************'
+  echo 'gbr      = git branch'
+  echo 'gco      = git checkout'
+  echo 'gnew     = git checkout -b'
+  echo 'gstash   = git stash'
+  echo 'gpop     = git stash pop'
+  echo 'gdrop    = git stash drop'
+  echo 'gdel     = git branch -D'
+  echo 'godel    = git push origin --delete $1'
+  echo 'gfetch   = git fetch'
+  echo 'gmerge   = git merge'
+  echo 'gpull    = git pull'
+  echo 'gpush    = git push'
+  echo 'glog     = git log'
+  echo 'gstat    = git status'
+  echo 'grbdev   = git rebase develop'
+  echo 'gpulldev = git checkout develop ; git reset --hard origin/develop ; git pull origin develop'
+  echo 'grbmas   = git rebase master'
+  echo 'gpullmas = git checkout master ; git reset --hard origin/master ; git pull origin master'
+  echo 'gmaster  = gco master'
+  echo 'pmaster  = gco master && git pull'
+  echo 'gsand    = gco env/sandbox'
+  echo 'psand    = gco env/sandbox && git pull'
+  echo 'gstag    = gco env/staging'
+  echo 'pstag    = gco env/staging && git pull'
+  echo ''
+}

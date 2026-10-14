@@ -1,0 +1,110 @@
+#! /bin/zsh
+
+# ##### Ruby / rbenv / gems #####
+
+function delete_gems () {
+  for x in `gem list --no-versions`; do gem uninstall $x -a -x -I; done
+}
+alias delgems='delete_gems'
+alias delg='delete_gems'
+alias removegems='delete_gems'
+
+function reload_gems () {
+  delete_gems && bundle install
+}
+
+function install_rbenv () {
+  cd $HOME && git clone https://github.com/rbenv/rbenv.git $HOME/.rbenv
+}
+
+function install_rbenv_plugins () {
+  cd $HOME && mkdir $HOME/.rbenv/plugins &&
+  git clone https://github.com/rbenv/ruby-build.git "$(rbenv root)"/plugins/ruby-build &&
+  git clone https://github.com/scott-knight/rbenv-gemset.git "$(rbenv root)"/plugins/rbenv-gemset &&
+  git clone https://github.com/rkh/rbenv-use.git "$(rbenv root)/plugins/rbenv-use" &&
+  git clone https://github.com/scott-knight/rbenv-bundle-exec.git "$(rbenv root)/plugins/rbenv-bundle-exec" &&
+  cd $HOME/.rbenv && cd $HOME
+}
+
+function reload_rbenv () {
+  echo 'Deleteing and reinstalling RBENV. Please wait...'
+  echo ''
+  cd $HOME &&
+  rm -rf $HOME/.rbenv &&
+  install_rbenv &&
+  install_rbenv_plugins &&
+  echo 'Done!'
+}
+
+function update_rbenv () {
+  CURR_DIR="$PWD" &&
+  echo ""
+  echo 'Updating RBENV, please wait...'
+  cd "$(rbenv root)" && git pull &&
+  cd "$CURR_DIR"
+  echo "Done updating RBENV!" &&
+  update_ruby_build &&
+  update_rbenv_gemset &&
+  update_rbenv_use &&
+  update_rbenv_bundle_exec
+}
+
+function update_ruby_build () {
+  CURR_DIR="$PWD" &&
+  echo ""
+  echo 'Updating ruby-build, please wait...'
+  cd "$(rbenv root)"/plugins/ruby-build && git pull &&
+  cd "$CURR_DIR"
+  echo "Done updating ruby-build!"
+}
+
+function update_rbenv_gemset () {
+  CURR_DIR="$PWD" &&
+  echo ""
+  echo 'Updating rbenv-gemset, please wait...'
+  cd "$(rbenv root)"/plugins/rbenv-gemset && git pull &&
+  cd "$CURR_DIR"
+  echo "Done updating rbenv-gemset!"
+}
+
+function update_rbenv_use () {
+  CURR_DIR="$PWD" &&
+  echo ""
+  echo 'Updating rbenv-use, please wait...'
+  cd "$(rbenv root)"/plugins/rbenv-use && git pull &&
+  cd "$CURR_DIR"
+  echo "Done updating rbenv-use!"
+}
+
+function update_rbenv_bundle_exec () {
+  CURR_DIR="$PWD" &&
+  echo ""
+  echo 'Updating rbenv-bundle-exec, please wait...'
+  cd "$(rbenv root)"/plugins/rbenv-bundle-exec && git pull &&
+  cd "$CURR_DIR"
+  echo "Done updating rbenv-bundle-exec!"
+}
+
+function rbenvi () {
+  echo ''
+  echo '****** RBENV ALIASES **************************************'
+  echo 'rbv     = rbenv version             # shows the current ruby version'
+  echo 'rbvs    = rbenv versions            # shows installed ruby versions'
+  echo 'rbvlist = rbenv install --list-all  # show all availabe ruby versions'
+  echo 'rehash  = rbenv rehash              # refreshes rbenv'
+  echo 'active  = rbenv gemset active       # shows the active gemset'
+  echo ''
+}
+alias rbvi='rbenvi'
+alias rbenvs='rbenvi'
+
+function cedit () {
+  EDITOR="code --wait" bin/rails credentials:edit
+}
+
+function ecreds () {
+  echo ''
+  echo '******  Editing Rails Credentials  **************************************'
+  echo 'cedit = EDITOR="code --wait" bin/rails credentials:edit'
+  echo 'vedit = EDITOR=vi bin/rails credentials:edit'
+}

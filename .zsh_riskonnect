@@ -1,0 +1,357 @@
+#! /bin/zsh
+
+# RISKONNECT THINGS =================================================================================
+export BASE_DOMAIN=lvh.me
+export ALTERNATE_DOMAIN=lv-alternate.me
+
+PROJDIR=$HOME/riskonnect.projects
+alias risk="cd $PROJDIR"
+alias devr="risk && ll"
+alias rdev="risk && ll"
+alias rkdev="risk && ll"
+
+function riskinfo () {
+  echo ''
+  echo '******  Riskonnect Aliases **************************************'
+  echo "PROJDIR    = $PROJDIR"
+  echo "alias risk = cd $PROJDIR"
+}
+alias riski=riskinfo
+
+GEMS='.gems/gems'
+alias open_gems="cd $GEMS && c ."
+alias og="open_gems"
+
+
+# BCR-Web FUNCTIONS ===============================================================================
+function bcrwssl() {
+  local repo="$1"
+  if [[ -n $repo ]]; then
+    eval $repo && rails s -b 'ssl://localhost:3000?key=localhost.key&cert=localhost.crt'
+  fi
+}
+
+function bcrwcss() {
+  local repo="$1"
+  if [[ -n $repo ]]; then
+    eval $repo &&
+    echo ''
+    echo 'Cleaning up app/assests/builds css assets. Please wait...' &&
+    rm -rf app/assets/builds/**/*.css
+    echo 'Done!'
+    echo ''
+    echo 'Rebulding app/assests/builds css assets with `yarn watch:css`'
+    yarn watch:css
+  fi
+}
+
+function bcrwjs() {
+  local repo="$1"
+  if [[ -n $repo ]]; then
+    eval $repo &&
+    echo ''
+    echo 'Cleaning up app/assests/builds js assets. Please wait...' &&
+    rm -rf app/assets/builds/**/*.js
+    echo 'Done!'
+    echo ''
+    echo 'Rebulding app/assests/builds js assets with `yarn build:dev --watch`'
+    yarn build:dev --watch
+  fi
+}
+
+function bcrwclobber() {
+  local repo="$1"
+  if [[ -n $repo ]]; then
+    echo ''
+    echo 'Cleaning up assets. Please wait...' &&
+    eval $repo &&
+    if [ -d "public/assets" ]; then
+      echo 'Running rails assets:clobber' &&
+      rails assets:clobber
+    fi
+
+    if [ -d "app/assets/builds" ]; then
+      echo 'Cleaning app/assets/build. Please wait...' &&
+      rm -rf app/assets/builds && mkdir app/assets/builds && touch app/assets/builds/.gitkeep
+    fi
+    echo 'Done!'
+    echo ''
+  fi
+}
+
+function bcrwindex() {
+  local repo="$1"
+  if [[ -n $repo ]]; then
+    eval $repo && rake elasticsearch:reset
+  fi
+}
+
+function bcrwenvs() {
+  local repo="$1"
+  if [[ -n $repo ]]; then
+    eval $repo &&
+    echo ''
+    echo 'Setting ENV VARS in catalyst_env_vars.sh'
+    if [[ ! -f catalyst_env_vars.sh ]]; then
+      cp -i catalyst_env_vars.sh{.example,}
+    fi
+
+    echo "Done!\n"
+  fi
+}
+alias bcrenv="bcrenvs"
+alias setbcrenv="bcrenvs"
+
+alias railss="rails s -b 127.0.0.1 -p 3000"
+alias rakejobwork="rake jobs:work"
+alias bcrdefaults="rake setup_catalyst:default_v1_feature_toggles"
+alias tdbr="RAILS_ENV=test rails db:drop db:create spec:prepare"
+alias dbr="rails db:drop db:create db:schema:load db:migrate setup_catalyst && tdbr"
+alias ctest='yarn run cypress open'
+alias cypress='yarn run cypress'
+alias opencoverage="open coverage/index.html"
+alias fsdev="foreman start -f Procfile.dev"
+alias fsui="foreman start -f Procfile.ui"
+alias espodman="cd elasticsearch && podman compose up"
+
+####### BCR-Web #######
+BCRWEB=$PROJDIR/BCR-Web
+BCRPODMAN=$PROJDIR/BCR-Web/podman
+alias bcr="cd $BCRWEB"
+alias bcrs='bcr && WEB_CONCURRENCY=1 RAILS_MAX_THREADS=1 railss'
+alias bcrc='bcr && rails c'
+alias bcrjobs='bcr && rakejobwork'
+alias bcrj='bcrjobs'
+alias bcrsk="bcr && bundle exec sidekiq"
+alias bcres="cd $BCRPODMAN && espodman"
+alias bcresd='bcres -d'
+alias bcresr='bcrwindex bcr'
+alias bcrindex='bcr && bundle exec rake elasticsearch:create_indexes'
+alias bcrimport='bcr && bundle exec rake elasticsearch:import_all'
+alias bcrm='bcr && mailcatcher'
+alias bcrcov='bcr & opencoverage'
+alias bcrg="bcr && og"
+alias bcrjs='bcrwjs bcr'
+alias bcrcss='bcrwcss bcr'
+alias bcrdev='bcr && fsdev'
+alias bcrui='bcrwclobber bcr && fsui'
+alias bcruic='bcrwclobber bcr'
+alias bcrclean='bcrwclobber bcr'
+alias bcrtdbr="bcr && tdbr"
+alias bcrdbr="bcr && dbr"
+alias bcrssl="bcrwssl bcr"
+alias bcrenvs="bcrwenvs bcr"
+
+function bcrpod () {
+  echo "Running: 'podman compose up'. Please wait..." &&
+  cd $BCRPODMAN && espodman
+}
+alias bcrpm="bcrpod"
+
+####### BCR-Web-Base #######
+BCRBWEB=$PROJDIR/BCR-Web-Base
+BCRBPODMAN=$PROJDIR/BCR-Web-Base/podman
+alias bcrb="cd $BCRBWEB"
+
+alias bcrbs='bcrb && rails s -b 127.0.0.1 -p 3100'
+alias bcrbc='bcrb && rails c'
+alias bcrbjobs='bcrb && rakejobwork'
+alias bcrbj='bcrbjobs'
+alias bcrbsk="bcrb && bundle exec sidekiq"
+alias bcrbes="cd $BCRBPODMAN && espodman"
+alias bcrbesd='bcrbes -d'
+alias bcrbesr='bcrwindex bcrb'
+alias bcrbm='bcrb && mailcatcher'
+alias bcrbcov='bcrb & opencoverage'
+alias bcrbg="bcrb && og"
+alias bcrbjs='bcrwjs bcrb'
+alias bcrbcss='bcrwcss bcrb'
+alias bcrbdev='bcrb && fsdev'
+alias bcrbui='bcrwclobber bcrb && fsui'
+alias bcrbuic='bcrwclobber bcrb'
+alias bcrbclean='bcrwclobber bcrb'
+alias bcrbtdbr="bcrb && tdbr"
+alias bcrbdbr="bcrb && dbr"
+alias bcrbssl="bcrwssl bcrb"
+
+
+####### BCR-Web-Rubicon #######
+BCRRWEB=$PROJDIR/BCR-Web-Rubicon
+BCRRPODMAN=$PROJDIR/BCR-Web-Rubicon/podman
+alias bcrr="cd $BCRRWEB"
+
+alias bcrrs='bcrr && railss'
+alias bcrrc='bcrr && rails c'
+alias bcrrjobs='bcrr && rakejobwork'
+alias bcrrj='bcrrjobs'
+alias bcrres="cd $BCRRPODMAN && espodman"
+alias bcrresd='bcrres -d'
+alias bcrresr='bcrwindex bcrr'
+alias bcrrm='bcrr && mailcatcher'
+alias bcrrcov='bcrr & opencoverage'
+alias bcrrg="bcrr && og"
+alias bcrrjs='bcrwjs bcrr'
+alias bcrrcss='bcrwcss bcrr'
+alias bcrrdev='bcrr && fsdev'
+alias bcrrui='bcrwclobber bcrr && fsui'
+alias bcrruic='bcrwclobber bcrr'
+alias bcrrclean='bcrwclobber bcrr'
+alias bcrrtdbr="bcrr && tdbr"
+alias bcrrdbr="bcrr && dbr"
+alias bcrrssl="bcrwssl bcrr"
+
+
+### FEATURE TOGGLES ------------------------------------------------------------------------------
+
+function add_feature_toggle () {
+  bcr &&
+  echo "Running: rake 'setup_catalyst:create_feature_toggle[$1]'. Please wait..."
+  if [[ -z $1 ]]; then
+    echo 'Unable to add a feature toggle without a name. Ex: new_toggle_name'
+  else
+    rake "setup_catalyst:create_feature_toggle[$1]"
+  fi
+}
+alias addft="add_feature_toggle "
+
+function delete_feature_toggle () {
+  bcr &&
+  echo "Running: rake 'setup_catalyst:delete_feature_toggle[$1]'. Please wait..."
+  if [[ -z $1 ]]; then
+    echo 'Unable to delete a feature toggle without a name. Ex: new_toggle_name'
+  else
+    rake "setup_catalyst:delete_feature_toggle[$1]"
+  fi
+}
+alias deleteft="delete_feature_toggle "
+alias delft="delete_feature_toggle "
+
+function enable_feature_toggle () {
+  bcr &&
+  echo "Running: rake 'setup_catalyst:enable_feature_toggle[$1]'. Please wait..."
+  if [[ -z $1 ]]; then
+    echo 'Unable to enable a feature toggle without a name. Ex: new_toggle_name'
+  else
+    rake "setup_catalyst:enable_feature_toggle[$1]"
+  fi
+}
+alias enableft="enable_feature_toggle "
+alias enft="enable_feature_toggle "
+alias bcreft="enable_feature_toggle "
+
+function disable_feature_toggle () {
+  bcr &&
+  echo "Running: rake 'setup_catalyst:disable_feature_toggle[$1]'. Please wait..."
+  if [[ -z $1 ]]; then
+    echo 'Unable to disable a feature toggle without a name. Ex: new_toggle_name'
+  else
+    rake "setup_catalyst:disable_feature_toggle[$1]"
+  fi
+}
+alias disableft="disable_feature_toggle "
+alias disft="disable_feature_toggle "
+alias bcrdft="disable_feature_toggle "
+
+function list_feature_toggles () {
+  bcr &&
+  echo "Running: rake setup_catalyst:list_feature_toggles. Please wait..."
+  rake setup_catalyst:list_feature_toggles
+}
+alias listfts="list_feature_toggles"
+alias bcrfts="list_feature_toggles"
+alias showtogs"list_feature_toggles"
+
+function add_default_feature_toggles () {
+  bcr &&
+  echo "Running: rake setup_catalyst:default_feature_toggles. Please wait..."
+  rake setup_catalyst:default_feature_toggles
+}
+alias addfts="add_default_feature_toggles"
+
+function delete_feature_toggles () {
+  bcr &&
+  echo "Running: rake setup_catalyst:delete_feature_toggles. Please wait..."
+  rake setup_catalyst:delete_feature_toggles
+}
+alias delfts="delete_feature_toggles"
+
+function bcrinfo () {
+  riski &&
+  echo ''
+  echo '******  BCR Aliases **************************************'
+  echo "PROJDIR = $HOME/riskonnect.projects"
+  echo "BCRWEB  = $PROJDIR/BCR-Web"
+  echo "bcr     = cd $BCRWEB"
+  echo "bcrs    = bcr && WEB_CONCURRENCY=1 RAILS_MAX_THREADS=1 rails s -b 127.0.0.1 -p 3000"
+  echo "bcrf    = bcr && foreman start -f Procfile.dev"
+  echo "bcrui   = bcr && foreman start -f Procfile.ui"
+  echo "bcrjs   = bcr && yarn build --watch"
+  echo "bcrcss  = bcr && yarn build:css --watch"
+  echo "bcrc    = bcr && rails c"
+  echo "bcrjobs = rake jobs:work"
+  echo "bcrj    = rake jobs:work"
+  echo "bcrm    = bcr && mailcatcher"
+  echo ''
+  echo '******  BCR-Web-Base **************************************'
+  echo "PROJDIR  = $HOME/riskonnect.projects"
+  echo "BCRBWEB = $PROJDIR/BCR-Web-Base"
+  echo "bcrb     = cd $BCRBWEB"
+  echo "bcrbs    = bcrb && rails s -b 127.0.0.1 -p 3000"
+  echo "bcrbc    = bcrb && rails c"
+  echo "bcrbjobs = bcrb && rake jobs:work"
+  echo "bcrbj    = bcrbjobs"
+  echo "bcrbesr  = bcrb && rake elasticsearch:reset"
+  echo "bcrbm    = bcrb && mailcatcher"
+  echo "bcrbcov  = bcrb & open coverage/index.html"
+  echo ''
+  echo '******  FEATURE TOGGLES  *********************************************************'
+  echo "listfts  = rake setup_catalyst:list_feature_toggles"
+  echo "bcrfts   = rake setup_catalyst:list_feature_toggles"
+  echo "showtogs = rake setup_catalyst:list_feature_toggles"
+  echo ''
+  echo 'Add or remove all global feature toggles'
+  echo "addfts = rake setup_catalyst:default_feature_toggles"
+  echo "delfts = rake setup_catalyst:delete_feature_toggles"
+  echo ''
+  echo 'Add or remove a SINGLE global feature toggle'
+  echo "addft toggle_name = rake 'setup_catalyst:create_feature_toggle[toggle_name]'"
+  echo "delft toggle_name = rake 'setup_catalyst:delete_feature_toggle[toggle_name]'"
+  echo ''
+  echo 'Enable or disable a SINGLE global feature toggle'
+  echo "enft toggle_name   = rake 'setup_catalyst:enable_feature_toggle[toggle_name]'"
+  echo "bcreft toggle_name = rake 'setup_catalyst:enable_feature_toggle[toggle_name]'"
+  echo ''
+  echo "disft toggle_name  = rake 'setup_catalyst:disable_feature_toggle[toggle_name]'"
+  echo "bcrdft toggle_name = rake 'setup_catalyst:disable_feature_toggle[toggle_name]'"
+  echo ''
+}
+alias bcri=bcrinfo
+
+
+### RAILS UPGRADE ALIASES ----------------------------------------------------------------------
+
+export MAIN_BRANCH='master'
+export UPGRADE_BRANCH='152312-update-app-with-turbo-rails'
+
+fucntion gbranch () {
+  ref=$(git symbolic-ref HEAD 2> /dev/null) || return
+  echo "${ref#refs/heads/}"
+}
+
+alias gmaster="bcr && gco master && git pull && gco $MAIN_BRANCH && gmerge master"
+
+function gmain () {
+  current_branch=$(gbranch) &&
+  bcr && gmaster && gpush && gco $current_branch && git rebase $MAIN_BRANCH
+}
+
+function minfo () {
+  riski &&
+  echo ''
+  echo '******  Rails Upgrade Aliases **************************************'
+  echo "PROJDIR = $HOME/riskonnect.projects"
+  echo "CATSAAS  = $PROJDIR/BCR-Web"
+  echo "bcr      = cd $BCRWEB"
+  echo "gmaster = bcr && gco master && git pull && gco $MAIN_BRANCH && gmerge master"
+  echo "gmain   = bcr && gco $MAIN_BRANCH && gpush && gco $(gbranch) && gmerge $MAIN_BRANCH"
+}

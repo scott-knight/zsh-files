@@ -1,0 +1,148 @@
+#! /bin/zsh
+
+# ##### PONYTAIL (global agent skills / rules) #####
+# Checkout: ~/.ponytail
+# Syncs skills + always-on rules for Cursor, Copilot, Claude Code, and ~/.agents
+PONYTAIL_HOME="${PONYTAIL_HOME:-$HOME/.ponytail}"
+PONYTAIL_REPO="${PONYTAIL_REPO:-https://github.com/DietrichGebert/ponytail.git}"
+
+function _ponytail_sync_dir() {
+  local src="$1"
+  local dest="$2"
+  mkdir -p "$dest"
+  rm -rf "$dest"
+  cp -R "$src" "$dest"
+}
+
+function _ponytail_sync_skills() {
+  local skill_src skill_name dest
+  for skill_src in "$PONYTAIL_HOME"/skills/*/; do
+    [ -d "$skill_src" ] || continue
+    skill_name="$(basename "$skill_src")"
+    for dest in \
+      "$HOME/.agents/skills/$skill_name" \
+      "$HOME/.cursor/skills/$skill_name" \
+      "$HOME/.claude/skills/$skill_name"
+    do
+      _ponytail_sync_dir "$skill_src" "$dest"
+    done
+  done
+}
+
+function _ponytail_sync_rules() {
+  mkdir -p "$HOME/.agents" "$HOME/.copilot" "$HOME/.claude" "$HOME/.codex"
+
+  # Always-on compact ruleset (managed by update_ponytail — safe to replace)
+  cp "$PONYTAIL_HOME/AGENTS.md" "$HOME/.agents/AGENTS.md"
+  cp "$PONYTAIL_HOME/AGENTS.md" "$HOME/.codex/AGENTS.md"
+  cp "$PONYTAIL_HOME/.github/copilot-instructions.md" "$HOME/.copilot/copilot-instructions.md"
+  cp "$PONYTAIL_HOME/AGENTS.md" "$HOME/.claude/CLAUDE.md"
+
+  # Cursor: prefer native hooks (level switching). Do not install
+  # ~/.cursor/rules/ponytail.mdc — that rule disables the hooks.
+  if command -v node >/dev/null 2>&1; then
+    node "$PONYTAIL_HOME/scripts/cursor-hooks.js" install
+  else
+    echo "node not found; skipped Cursor hooks install"
+  fi
+
+  # Drop a stale global Cursor rule if a prior install left one
+  if [ -f "$HOME/.cursor/rules/ponytail.mdc" ]; then
+    rm -f "$HOME/.cursor/rules/ponytail.mdc"
+    echo "Removed ~/.cursor/rules/ponytail.mdc (hooks own Cursor activation)"
+  fi
+}
+
+function _ponytail_try_plugins() {
+  # Optional CLIs — skip quietly when not installed
+  if command -v claude >/dev/null 2>&1; then
+    echo "Claude Code CLI found: ensure plugin is installed with:"
+    echo "  /plugin marketplace add DietrichGebert/ponytail"
+    echo "  /plugin install ponytail@ponytail"
+  fi
+  if command -v copilot >/dev/null 2>&1; then
+    echo "Copilot CLI found: ensure plugin is installed with:"
+    echo "  copilot plugin marketplace add DietrichGebert/ponytail"
+    echo "  copilot plugin install ponytail@ponytail"
+  fi
+}
+
+function install_ponytail() {
+  echo ''
+  echo "Installing ponytail into ${PONYTAIL_HOME}..."
+  if [ -d "$PONYTAIL_HOME/.git" ]; then
+    echo "Checkout already exists; pulling latest..."
+    git -C "$PONYTAIL_HOME" pull --ff-only
+  else
+    rm -rf "$PONYTAIL_HOME"
+    git clone "$PONYTAIL_REPO" "$PONYTAIL_HOME"
+  fi
+  _ponytail_sync_skills
+  _ponytail_sync_rules
+  _ponytail_try_plugins
+  echo "Ponytail installed."
+  echo "  checkout:  ${PONYTAIL_HOME}"
+  echo "  skills:    ~/.agents/skills/ponytail*  ~/.cursor/skills/ponytail*  ~/.claude/skills/ponytail*"
+  echo "  rules:     ~/.agents/AGENTS.md  ~/.copilot/copilot-instructions.md  ~/.claude/CLAUDE.md"
+  echo "  cursor:    hooks via ~/.cursor/hooks.json (new chat to activate)"
+  echo ''
+}
+alias ponytail_install="install_ponytail"
+
+function update_ponytail() {
+  echo ''
+  echo "Updating ponytail..."
+  if [ ! -d "$PONYTAIL_HOME/.git" ]; then
+    echo "No checkout at ${PONYTAIL_HOME}; running install_ponytail..."
+    install_ponytail
+    return $?
+  fi
+  git -C "$PONYTAIL_HOME" pull --ff-only || {
+    echo "git pull failed for ${PONYTAIL_HOME}"
+    return 1
+  }
+  _ponytail_sync_skills
+  _ponytail_sync_rules
+  _ponytail_try_plugins
+  echo "Ponytail updated from ${PONYTAIL_HOME}."
+  echo ''
+}
+alias ponytail_update="update_ponytail"
+alias upony="update_ponytail"
+
+function reload_ponytail() {
+  echo ''
+  echo "Deleting and reinstalling ponytail. Please wait..."
+  if [ -d "$PONYTAIL_HOME" ] && command -v node >/dev/null 2>&1 && [ -f "$PONYTAIL_HOME/scripts/cursor-hooks.js" ]; then
+    node "$PONYTAIL_HOME/scripts/cursor-hooks.js" uninstall 2>/dev/null || true
+  fi
+  rm -rf "$PONYTAIL_HOME"
+  rm -rf \
+    "$HOME/.agents/skills"/ponytail \
+    "$HOME/.agents/skills"/ponytail-* \
+    "$HOME/.cursor/skills"/ponytail \
+    "$HOME/.cursor/skills"/ponytail-* \
+    "$HOME/.claude/skills"/ponytail \
+    "$HOME/.claude/skills"/ponytail-*
+  rm -f \
+    "$HOME/.agents/AGENTS.md" \
+    "$HOME/.copilot/copilot-instructions.md" \
+    "$HOME/.claude/CLAUDE.md" \
+    "$HOME/.codex/AGENTS.md" \
+    "$HOME/.cursor/rules/ponytail.mdc"
+  install_ponytail
+  echo "Ponytail reload complete."
+  echo ''
+}
+alias ponytail_reload="reload_ponytail"
+
+function ponytails() {
+  echo ''
+  echo "******  Ponytail commands  **************************************"
+  echo "PONYTAIL_HOME = ${PONYTAIL_HOME}"
+  echo "install_ponytail / ponytail_install = clone + sync global skills/rules/hooks"
+  echo "update_ponytail  / ponytail_update  / upony = git pull + re-sync all targets"
+  echo "reload_ponytail  / ponytail_reload  = wipe checkout + managed copies, reinstall"
+  echo "Also run from: update"
+  echo ''
+}

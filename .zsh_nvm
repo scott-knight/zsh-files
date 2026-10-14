@@ -1,0 +1,129 @@
+#! /bin/zsh
+
+# ##### NVM / Node / npm / yarn #####
+
+function update_nvm() {
+  echo '' &&
+  echo "Updating NVM" &&
+  (
+    cd "$NVM_DIR"
+    git fetch --tags origin
+    git checkout `git describe --abbrev=0 --tags --match "v[0-9]*" $(git rev-list --tags --max-count=1)`
+  ) && \. "$NVM_DIR/nvm.sh" &&
+  echo "Completed updating NVM!"
+}
+
+function install_nvm () {
+  echo '' &&
+  echo "Installing NVM (Node Version Manager)" &&  (
+    git clone https://github.com/nvm-sh/nvm.git "$NVM_DIR"
+    cd "$NVM_DIR"
+    git checkout `git describe --abbrev=0 --tags --match "v[0-9]*" $(git rev-list --tags --max-count=1)`
+  ) && \. "$NVM_DIR/nvm.sh"
+}
+
+function updateNVM() {
+  echo '' &&
+  echo "Updating NVM (Node Version Manager)" && (
+    cd "$NVM_DIR" &&
+    git fetch --tags origin &&
+    git checkout `git describe --abbrev=0 --tags --match "v[0-9]*" $(git rev-list --tags --max-count=1)`
+  ) && \. "$NVM_DIR/nvm.sh" && echo "NVM update complete."
+}
+alias unvm="updateNVM"
+alias nvmu="updateNVM"
+alias nvmupdate="updateNVM"
+alias nvm_update="updateNVM"
+alias nvmlist="nvm ls-remote"
+
+function reload_nvm () {
+  cd $HOME && echo '' && echo 'Deleting and reinstalling NVM. Please wait...'
+  rm -rf $HOME/.nvm &&
+  install_nvm &&
+  echo 'Done!'
+}
+
+function upgrade_node_lts() {
+  echo '' &&
+  echo 'Updating Node LTS' &&
+  nvm install --lts &&
+  # nvm use --lts &&
+  echo 'Completed updating Node!' &&
+  upgrade_npm
+}
+
+function upgrade_node() {
+  echo '' &&
+  echo 'Updating Node' &&
+  nvm install node &&
+  # nvm use node
+  echo 'Completed updating Node!' &&
+  upgrade_npm
+}
+
+function upgrade_npm() {
+  echo '' &&
+  echo "Updating NPM" &&
+  npm install npm@latest -g &&
+  echo "Completed updating NPM!"
+}
+alias unpm="upgrade_npm"
+alias npmu="upgrade_npm"
+alias npm_update="upgrade_npm"
+alias npmupdate="upgrade_npm"
+
+function npms () {
+  echo ''
+  echo "******  NPM Update commands  **************************************"
+  echo 'upgrade_npm = npm install npm@latest -g'
+  echo 'unpm        = upgrade_npm'
+  echo 'npmu        = upgrade_npm'
+  echo 'npm_update  = upgrade_npm'
+  echo 'npmupdate   = upgrade_npm'
+  echo ''
+}
+
+function nvms () {
+  echo ''
+  echo "******  NVM Update commands **************************************"
+  echo 'updateNVM  = cd "$NVM_DIR" && git fetch --tags origin && git checkout `git describe...'
+  echo 'unvm       = updateNVM'
+  echo 'nvmu       = updateNVM'
+  echo 'nvmupdate  = updateNVM'
+  echo 'nvm_update = updateNVM'
+  echo "nvmlist    = nvm ls-remote      # show installable nvms"
+  npms
+}
+
+# Yarn
+alias yup="yarn upgrade-interactive"
+alias yupdate="yup"
+alias ylist="yarn info"
+alias yl="ylist"
+alias ylg="ylist | grep $1"
+alias ydev="yarn dev"
+alias yarnen="corepack enable"
+alias yarn_enable="yarnen"
+
+function yarn_upgrade() {
+  yarn set version stable
+}
+alias yarnupgrade="yarn_upgrade"
+alias yarnset="yarn_upgrade"
+alias yarn_stable="yarn_upgrade"
+
+function yarnup() {
+  yarn upgrade-interactive
+}
+alias yarnui="yarnup"
+
+function yarns () {
+  echo ''
+  echo "******  Yarn commands  **************************************"
+  echo 'upgrade_yarn = yarn set version stable'
+  echo 'yarn_upgrade = upgrade_yarn'
+  echo 'yarnupg      = upgrade_yarn'
+  echo 'yarnup       = yarn upgrade-interactive'
+  echo 'yarnui       = yarn upgrade-interactive'
+  echo ''
+}

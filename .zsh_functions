@@ -1,0 +1,168 @@
+#! /bin/zsh
+
+# Add a name to zsh_helpers_skip to keep the file on disk but not source it.
+# DB: .zsh_mysql57 (Podman MySQL 5.7) vs .zsh_mariadb10-5 (brew MariaDB 10.5)
+zsh_helpers=(
+  .zsh_ponytail
+  .zsh_ruby
+  .zsh_nvm
+  .zsh_git
+  .zsh_redis
+  .zsh_podman
+  .zsh_memcached
+  .zsh_mysql57
+  .zsh_mariadb10-5
+  .zsh_riskonnect
+)
+zsh_helpers_skip=(
+  .zsh_mariadb10-5
+)
+
+for _zsh_helper in "${zsh_helpers[@]}"; do
+  (( ${zsh_helpers_skip[(Ie)$_zsh_helper]} )) && continue
+  if [ -f "$HOME/$_zsh_helper" ]; then
+    source "$HOME/$_zsh_helper"
+  else
+    echo "not sure what happened with $HOME/$_zsh_helper"
+  fi
+done
+unset _zsh_helper
+
+function reload_zsh_tools () {
+  echo 'Deleteing and reinstalling ZSH tools. Please wait...'
+  echo ''
+  cd $HOME &&
+  rm -rf $HOME/.zsh &&
+  install_zsh_tools &&
+  echo 'Done!'
+  echo ''
+}
+
+function install_zsh_tools () {
+  cd $HOME && mkdir $HOME/.zsh &&
+  git clone https://github.com/zsh-users/zsh-autosuggestions $HOME/.zsh/zsh-autosuggestions &&
+  echo "" &&
+  git clone https://github.com/zsh-users/zsh-syntax-highlighting.git $HOME/.zsh/zsh-syntax-highlighting &&
+  cd $HOME
+}
+
+function update_zsh_autosuggestions () {
+  CURR_DIR="$PWD" &&
+  echo ""
+  echo 'Updating zsh-autosuggestions, please wait...'
+  cd $HOME/.zsh/zsh-autosuggestions && git pull &&
+  cd "$CURR_DIR"
+  echo "Done updating zsh-autosuggestions!"
+}
+
+function update_zsh_syntax_highlighting () {
+  CURR_DIR="$PWD" &&
+  echo ""
+  echo 'Updating zsh-syntax-highlighting, please wait...'
+  cd $HOME/.zsh/zsh-syntax-highlighting && git pull &&
+  cd "$CURR_DIR"
+  echo "Done updating zsh-syntax-highlighting!"
+}
+
+function update_zsh_tools () {
+  CURR_DIR="$PWD" &&
+  update_zsh_autosuggestions &&
+  update_zsh_syntax_highlighting
+}
+
+function upgrade_brew() {
+  echo ''
+  echo "Updating BREW"
+  brew update &&
+  echo ''
+  echo "Upgrading BREW installs"
+  brew upgrade --greedy &&
+  echo ''
+  echo "Cleaning up BREW"
+  brew cleanup &&
+  echo "Completed BREW updates!"
+}
+
+function update() {
+  echo "Upgrading ALL the things..."
+  update_zsh_tools &&
+  update_rbenv &&
+  update_ponytail &&
+  upgrade_brew &&
+  updateNVM &&
+  upgrade_node_lts &&
+  # upgrade_node &&
+  echo ''
+  echo "All updates complete!!"
+}
+
+function fixchrome () {
+  echo 'Running command sudo xattr -r -d com.apple.quarantine $(which chromedriver)'
+  echo 'You might be asked to provide your system password'
+  sudo xattr -r -d com.apple.quarantine $(which chromedriver)
+  echo 'Done!'
+}
+alias fixcd="fixchrome"
+alias chromefix="fixchrome"
+
+function rebuild_index () {
+  sudo mdutil -Eai off &&
+  sudo mdutil -Eai on &&
+  mdutil -as
+}
+alias rebi="rebuild_index"
+
+function scotts () {
+  echo ''
+  echo "******  Scott Projects commands  **************************************"
+  echo 'SCOTTPROJ = ~/scott.projects'
+  echo 'scott     = cd $SCOTTPROJ'
+  echo 'sdev      = scott && ll'
+  echo 'unin      = cd $SCOTTPROJ/unipay-nuxt-ui'
+  echo 'unia      = cd $SCOTTPROJ/unipay-api'
+  echo 'unic      = cd $SCOTTPROJ/unipay'
+  echo 'sui       = cd $SCOTTPROJ/sandbox-ui'
+  echo 'sapi      = cd $SCOTTPROJ/sandbox-api'
+  echo 'oapp      = cd $SCOTTPROJ/online-application-service'
+  echo 'appc      = cd $SCOTTPROJ/application-center-ui'
+  echo 'sadmin    = cd $SCOTTPROJ/rh_client_superadmin'
+  ecreds
+  services
+  ngroks
+  echo ''
+}
+
+function brews () {
+  echo ''
+  echo '****** REDIS **************************************'
+  echo 'redstart   = brew services start redis'
+  echo 'redstop    = brew services stop redis'
+  echo 'redrestart = redstop && redstart'
+  echo 'redstat    = checks the current status of redis'
+  echo ''
+  echo '****** Elastic Search **************************************'
+  echo 'esstart    = brew services start elasticsearch-full (or your es alias)'
+  echo 'esstop     = brew services stop elasticsearch-full'
+}
+
+# alias esstart="brew services start elastic/tap/elasticsearch-full"
+# alias esstop="brew services stop elastic/tap/elasticsearch-full"
+
+function bstart () {
+  echo 'Starting Brew services. Please wait...'
+  bredstart &&
+  esstart &&
+  mystart
+  echo "Done!\n"
+}
+alias startall="bstart"
+
+
+function bstop () {
+  echo 'Stopping Brew services. Please wait...'
+  bredstop &&
+  esstop &&
+  mystop
+  echo "Done!\n"
+}
+alias stopall="bstart"

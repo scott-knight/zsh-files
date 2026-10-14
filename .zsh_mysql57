@@ -1,0 +1,351 @@
+#! /bin/zsh
+# MySQL 5.7 via Podman (replaces brew mariadb@10.5 mystart/mystop)
+# Requires: export PODMAN=/opt/homebrew/bin/podman in ~/.zshrc
+#
+# mysql-client = libs/headers for the mysql2 gem (NOT a MySQL server).
+# Only needed when building mysql2 against MySQL; MariaDB does not use this.
+export PATH="/opt/homebrew/opt/mysql-client/bin:$PATH"
+export LDFLAGS="-L/opt/homebrew/opt/mysql-client/lib${LDFLAGS:+ $LDFLAGS}"
+export CPPFLAGS="-I/opt/homebrew/opt/mysql-client/include${CPPFLAGS:+ $CPPFLAGS}"
+export PKG_CONFIG_PATH="/opt/homebrew/opt/mysql-client/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+
+function mysql57helps () {
+  echo ''
+  echo '****** MySQL / MariaDB **************************************'
+  echo 'mystart    = start podman mysql57 (idempotent)'
+  echo 'mystop     = stop podman mysql57 (idempotent)'
+  echo 'mdbr       = reloaddb => deletedb && installdb'
+  echo ''
+}
+alias myhelps='mysql57helps'
+alias myhelp='mysql57helps'
+
+unalias mystart mystop 2>/dev/null
+
+MYSQL57_IMAGE="docker.io/library/mysql:5.7"
+MYSQL57_SOCK="/tmp/mysql.sock"
+MYSQL57_SOCAT_BIN="${MYSQL57_SOCAT_BIN:-/opt/homebrew/bin/socat}"
+MYSQL57_SOCAT_LABEL="com.user.mysql57-sock"
+MYSQL57_SOCAT_PLIST="$HOME/Library/LaunchAgents/${MYSQL57_SOCAT_LABEL}.plist"
+MYSQL57_SOCAT_LOG="$HOME/Library/Logs/mysql57-socat.log"
+MYSQL57_SOCAT_DOMAIN="gui/$(id -u)"
+
+function _mysql57_ensure_image () {
+  if "$PODMAN" image exists "$MYSQL57_IMAGE" 2>/dev/null; then
+    return 0
+  fi
+  echo "Downloading ${MYSQL57_IMAGE} (first time can take a few minutes)..."
+  if "$PODMAN" pull --platform linux/amd64 "$MYSQL57_IMAGE" >/dev/null; then
+    echo "Download complete"
+    return 0
+  fi
+  echo "Failed to download ${MYSQL57_IMAGE}"
+  return 1
+}
+
+function _mysql57_create () {
+  _mysql57_ensure_image || return 1
+  "$PODMAN" run -d \
+    --name mysql57 \
+    --restart=always \
+    --platform linux/amd64 \
+    -p 3306:3306 \
+    -e MYSQL_ROOT_PASSWORD=root \
+    -e MYSQL_ROOT_HOST='%' \
+    -v mysql57-data:/var/lib/mysql \
+    "$MYSQL57_IMAGE" \
+    --max-allowed-packet=1073741824 >/dev/null
+}
+
+function _mysql57_recreate () {
+  "$PODMAN" rm -f mysql57 >/dev/null 2>&1
+  if ! _mysql57_create 2>/dev/null; then
+    "$PODMAN" rm -f mysql57 >/dev/null 2>&1
+    "$PODMAN" volume rm -f mysql57-data >/dev/null 2>&1
+    _mysql57_create || return 1
+  fi
+}
+
+function _mysql57_ready () {
+  "$PODMAN" exec mysql57 mysqladmin ping -uroot -proot --silent 2>/dev/null
+}
+
+function _mysql57_ensure_machine () {
+  if ! "$PODMAN" machine inspect --format '{{.State}}' 2>/dev/null | head -1 | grep -qi '^running$'; then
+    echo "Starting podman machine..."
+    if ! "$PODMAN" machine start >/dev/null 2>&1; then
+      echo "Failed to start podman machine"
+      return 1
+    fi
+  fi
+
+  local i
+  for i in {1..20}; do
+    "$PODMAN" info >/dev/null 2>&1 && return 0
+    sleep 1
+  done
+  echo "Failed to start (podman API not ready)"
+  return 1
+}
+
+# Rails defaults to /tmp/mysql.sock. Podman only exposes TCP :3306.
+# mystart/mystop own a LaunchAgent that keeps socat alive — no extra setup steps.
+function _mysql57_socket_listening () {
+  [[ -S "$MYSQL57_SOCK" ]] || return 1
+  lsof -t "$MYSQL57_SOCK" >/dev/null 2>&1
+}
+
+function _mysql57_socket_write_plist () {
+  local socat_bin="$1"
+  mkdir -p "$HOME/Library/LaunchAgents" "$HOME/Library/Logs"
+  cat > "$MYSQL57_SOCAT_PLIST" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>${MYSQL57_SOCAT_LABEL}</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>${socat_bin}</string>
+    <string>UNIX-LISTEN:${MYSQL57_SOCK},fork,reuseaddr,unlink-early</string>
+    <string>TCP:127.0.0.1:3306</string>
+  </array>
+  <key>RunAtLoad</key>
+  <false/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>${MYSQL57_SOCAT_LOG}</string>
+  <key>StandardErrorPath</key>
+  <string>${MYSQL57_SOCAT_LOG}</string>
+</dict>
+</plist>
+EOF
+}
+
+function _mysql57_socket_stop () {
+  launchctl bootout "${MYSQL57_SOCAT_DOMAIN}/${MYSQL57_SOCAT_LABEL}" >/dev/null 2>&1
+  # Legacy nohup/pidfile cleanup (older helper versions)
+  if [[ -f /tmp/mysql57-socat.pid ]]; then
+    kill "$(cat /tmp/mysql57-socat.pid 2>/dev/null)" 2>/dev/null
+    rm -f /tmp/mysql57-socat.pid
+  fi
+  if [[ -e "$MYSQL57_SOCK" ]]; then
+    local p
+    for p in $(lsof -t "$MYSQL57_SOCK" 2>/dev/null); do
+      kill "$p" 2>/dev/null
+    done
+    rm -f "$MYSQL57_SOCK"
+  fi
+}
+
+function _mysql57_socket_start () {
+  if [[ ! -x "$MYSQL57_SOCAT_BIN" ]] && ! command -v socat >/dev/null 2>&1; then
+    echo "socat missing (brew install socat) — Rails needs /tmp/mysql.sock" >&2
+    return 1
+  fi
+  local socat_bin="$MYSQL57_SOCAT_BIN"
+  [[ -x "$socat_bin" ]] || socat_bin="$(command -v socat)"
+
+  if _mysql57_socket_listening && \
+     launchctl print "${MYSQL57_SOCAT_DOMAIN}/${MYSQL57_SOCAT_LABEL}" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  _mysql57_socket_stop
+  _mysql57_socket_write_plist "$socat_bin"
+
+  launchctl bootout "${MYSQL57_SOCAT_DOMAIN}/${MYSQL57_SOCAT_LABEL}" >/dev/null 2>&1
+  if ! launchctl bootstrap "$MYSQL57_SOCAT_DOMAIN" "$MYSQL57_SOCAT_PLIST" 2>/dev/null; then
+    echo "Failed to load ${MYSQL57_SOCAT_LABEL}" >&2
+    return 1
+  fi
+  if ! launchctl kickstart -k "${MYSQL57_SOCAT_DOMAIN}/${MYSQL57_SOCAT_LABEL}" >/dev/null 2>&1; then
+    echo "Failed to start ${MYSQL57_SOCAT_LABEL}" >&2
+    return 1
+  fi
+
+  local i
+  for i in {1..30}; do
+    _mysql57_socket_listening && return 0
+    sleep 0.1
+  done
+  echo "Failed to publish ${MYSQL57_SOCK} (see ${MYSQL57_SOCAT_LOG})" >&2
+  return 1
+}
+
+function mystart () {
+  if [[ -z "$PODMAN" ]]; then
+    echo "PODMAN is not set (expected in ~/.zshrc)" >&2
+    return 1
+  fi
+
+  _mysql57_ensure_machine || return 1
+
+  if "$PODMAN" container exists mysql57 2>/dev/null && \
+     "$PODMAN" inspect -f '{{.State.Running}}' mysql57 2>/dev/null | grep -qx true && \
+     _mysql57_ready; then
+    _mysql57_socket_start || return 1
+    echo "Already started"
+    return 0
+  fi
+
+  echo "Starting..."
+
+  if ! "$PODMAN" container exists mysql57 2>/dev/null; then
+    if ! _mysql57_create; then
+      echo "Failed to start"
+      return 1
+    fi
+  elif ! "$PODMAN" inspect -f '{{.State.Running}}' mysql57 2>/dev/null | grep -qx true; then
+    if ! "$PODMAN" start mysql57 >/dev/null 2>&1; then
+      if ! _mysql57_recreate; then
+        echo "Failed to start"
+        return 1
+      fi
+    fi
+  fi
+
+  local i
+  for i in {1..45}; do
+    if _mysql57_ready; then
+      _mysql57_socket_start || return 1
+      echo "Started"
+      return 0
+    fi
+    if ! "$PODMAN" inspect -f '{{.State.Running}}' mysql57 2>/dev/null | grep -qx true; then
+      if ! _mysql57_recreate; then
+        echo "Failed to start"
+        return 1
+      fi
+    fi
+    sleep 2
+  done
+
+  echo "Failed to start"
+  return 1
+}
+
+function mystop () {
+  if [[ -z "$PODMAN" ]]; then
+    echo "PODMAN is not set (expected in ~/.zshrc)" >&2
+    return 1
+  fi
+
+  _mysql57_socket_stop
+
+  if ! "$PODMAN" machine inspect --format '{{.State}}' 2>/dev/null | head -1 | grep -qi '^running$' || \
+     ! "$PODMAN" info >/dev/null 2>&1 || \
+     ! "$PODMAN" container exists mysql57 2>/dev/null || \
+     ! "$PODMAN" inspect -f '{{.State.Running}}' mysql57 2>/dev/null | grep -qx true; then
+    echo "Already stopped"
+    return 0
+  fi
+
+  echo "Stopping..."
+  if "$PODMAN" stop mysql57 >/dev/null 2>&1; then
+    echo "Stopped"
+  else
+    echo "Failed to stop"
+    return 1
+  fi
+}
+
+# Wipe mysql57 container + data volume, then recreate empty MySQL 5.7
+function myreload () {
+  if [[ -z "$PODMAN" ]]; then
+    echo "PODMAN is not set (expected in ~/.zshrc)" >&2
+    return 1
+  fi
+
+  echo "Reloading mysql57 (container + data)..."
+  _mysql57_ensure_machine || return 1
+
+  _mysql57_socket_stop
+  "$PODMAN" rm -f mysql57 >/dev/null 2>&1
+  "$PODMAN" volume rm -f mysql57-data >/dev/null 2>&1
+
+  if ! mystart; then
+    echo "Failed to reload"
+    return 1
+  fi
+  echo "Reload complete"
+}
+alias myreset="myreload"
+alias mdbr="myreload"
+
+function reloaddb () {
+  myreload
+}
+
+function deletedb () {
+  echo 'Stopping mysql57 and deleting container + data + image. Please wait...'
+  mystop
+  if [[ -n "$PODMAN" ]] && "$PODMAN" info >/dev/null 2>&1; then
+    "$PODMAN" rm -f mysql57 >/dev/null 2>&1
+    "$PODMAN" volume rm -f mysql57-data >/dev/null 2>&1
+    "$PODMAN" image rm -f "$MYSQL57_IMAGE" >/dev/null 2>&1
+  fi
+  echo 'Done!'
+  echo ''
+}
+
+function installdb () {
+  echo 'Creating and starting mysql57 via Podman. Please wait...'
+  mystart
+}
+
+# Console clients use MySQL 5.7 inside the mysql57 container (no host mysql/8.x install)
+function _mysql57_cli () {
+  local cmd="$1"
+  shift
+
+  if [[ -z "$PODMAN" ]]; then
+    echo "PODMAN is not set (expected in ~/.zshrc)" >&2
+    return 1
+  fi
+
+  if ! "$PODMAN" inspect -f '{{.State.Running}}' mysql57 2>/dev/null | grep -qx true; then
+    echo "mysql57 is not running (run mystart first)" >&2
+    return 1
+  fi
+
+  if [[ -t 0 && -t 1 ]]; then
+    "$PODMAN" exec -it mysql57 "$cmd" "$@"
+  else
+    "$PODMAN" exec -i mysql57 "$cmd" "$@"
+  fi
+}
+
+# Default to root/root unless -u/--user or -p/--password already provided
+function _mysql57_cli_as_root () {
+  local cmd="$1"
+  shift
+  local has_user=0 has_pass=0 arg
+
+  for arg in "$@"; do
+    case "$arg" in
+      -u*|--user|--user=*) has_user=1 ;;
+      -p*|--password|--password=*) has_pass=1 ;;
+    esac
+  done
+
+  (( has_user )) || set -- -uroot "$@"
+  (( has_pass )) || set -- -proot "$@"
+
+  _mysql57_cli "$cmd" "$@"
+}
+
+function mysql () {
+  _mysql57_cli_as_root mysql "$@"
+}
+
+function mysqladmin () {
+  _mysql57_cli_as_root mysqladmin "$@"
+}
+
+# Console shortcut: open the 5.7 client as root (server is managed by mystart/mystop)
+function mysqld () {
+  _mysql57_cli_as_root mysql "$@"
+}
