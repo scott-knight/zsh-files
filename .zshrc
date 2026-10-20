@@ -30,9 +30,9 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 HOMEBREW_CASK_OPTS="--no-quarantine"
 export PODMAN=/opt/homebrew/bin/podman
 
-# DB client PATH / mysql-client gem flags: see zsh_helpers / zsh_helpers_skip in ~/.zsh_functions
-#   ~/.zsh_mysql57     (Podman MySQL 5.7)
-#   ~/.zsh_mariadb10-5 (brew MariaDB 10.5)
+# DB client PATH / mysql-client gem flags: see zsh_fn_base_helpers / LOCAL_ENV in $ZSH_FILES/.zsh_functions
+#   .zsh_mysql57     (Podman MySQL 5.7) — LOCAL_ENV=rk
+#   .zsh_mariadb10-5 (brew MariaDB 10.5) — LOCAL_ENV=rk (skipped by default)
 
 # export Paths
 export PATH="/opt/homebrew/opt/curl/bin:/opt/homebrew/opt/ruby/bin:$PATH"
@@ -77,21 +77,22 @@ load-nvmrc() {
 add-zsh-hook chpwd load-nvmrc
 load-nvmrc
 
-zsh_helpers=(
-  .zsh_envs
+# Sourced from $ZSH_FILES (set by ~/.zshrc). .zshrc_envs already loaded from $HOME.
+zsh_core_helpers=(
   .zsh_alias_list
   .zsh_functions
 )
 
-for _zsh_helper in "${zsh_helpers[@]}"; do
-  if [ -f "$HOME/$_zsh_helper" ]; then
-    source "$HOME/$_zsh_helper"
-    echo "using $HOME/$_zsh_helper"
+for _zsh_core in "${zsh_core_helpers[@]}"; do
+  _zsh_core_path="$ZSH_FILES/$_zsh_core"
+  if [ -f "$_zsh_core_path" ]; then
+    source "$_zsh_core_path"
+    echo "using ${_zsh_core_path}"
   else
-    echo "not sure what happened with $HOME/$_zsh_helper"
+    echo "not sure what happened with ${_zsh_core_path}"
   fi
 done
-unset _zsh_helper
+unset _zsh_core _zsh_core_path
 
 source $(brew --prefix)/opt/spaceship/spaceship.zsh
 source $HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh

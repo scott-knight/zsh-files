@@ -38,10 +38,7 @@ alias be='bundle exec'
 SCOTTPROJ=$HOME/scott.projects
 alias scott="cd $SCOTTPROJ"
 alias sdev="scott && ll"
-alias sui="cd $SCOTTPROJ/sandbox-js"
-alias sjs="sui"
-alias sapi="cd $SCOTTPROJ/sandbox-api"
-
+alias zshf="cd $SCOTTPROJ/zsh-files"
 
 # Ngrok
 alias ngrok3000="~/ngrok http 3000"

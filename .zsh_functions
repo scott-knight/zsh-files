@@ -1,8 +1,17 @@
 #! /bin/zsh
 
-# Add a name to zsh_helpers_skip to keep the file on disk but not source it.
-# DB: .zsh_mysql57 (Podman MySQL 5.7) vs .zsh_mariadb10-5 (brew MariaDB 10.5)
-zsh_helpers=(
+# Helpers live in $ZSH_FILES (default: ~/scott.projects/zsh-files).
+#
+# 1. zsh_fn_base_helpers          — always sourced
+# 2. zsh_fn_helpers_for_$ENV      — appended when LOCAL_ENV matches (set in ~/.zshrc_envs)
+# 3. zsh_fn_helpers_skip          — always skipped
+# 4. zsh_fn_helpers_skip_for_$ENV — skipped only for that LOCAL_ENV
+#
+# Example: export LOCAL_ENV="rk"
+# New profile: add *_for_<name> / *_skip_for_<name> arrays and set LOCAL_ENV.
+# DB swap (rk): both DB helpers in the pack; inactive one in skip_for_rk.
+
+zsh_fn_base_helpers=(
   .zsh_ponytail
   .zsh_ruby
   .zsh_nvm
@@ -10,23 +19,44 @@ zsh_helpers=(
   .zsh_redis
   .zsh_podman
   .zsh_memcached
+)
+
+zsh_fn_helpers_skip=(
+)
+
+zsh_fn_helpers_for_rk=(
   .zsh_mysql57
   .zsh_mariadb10-5
   .zsh_riskonnect
 )
-zsh_helpers_skip=(
+
+# Currently on MySQL 5.7 — skip MariaDB under rk. Flip to .zsh_mysql57 for MariaDB.
+zsh_fn_helpers_skip_for_rk=(
   .zsh_mariadb10-5
 )
 
-for _zsh_helper in "${zsh_helpers[@]}"; do
-  (( ${zsh_helpers_skip[(Ie)$_zsh_helper]} )) && continue
-  if [ -f "$HOME/$_zsh_helper" ]; then
-    source "$HOME/$_zsh_helper"
+if [[ -n ${LOCAL_ENV:-} ]]; then
+  _zsh_fn_pack="zsh_fn_helpers_for_${LOCAL_ENV}"
+  if (( ${(P)+_zsh_fn_pack} )); then
+    zsh_fn_base_helpers+=(${(P)_zsh_fn_pack[@]})
+  fi
+  _zsh_fn_skip_pack="zsh_fn_helpers_skip_for_${LOCAL_ENV}"
+  if (( ${(P)+_zsh_fn_skip_pack} )); then
+    zsh_fn_helpers_skip+=(${(P)_zsh_fn_skip_pack[@]})
+  fi
+fi
+unset _zsh_fn_pack _zsh_fn_skip_pack
+
+for _zsh_fn in "${zsh_fn_base_helpers[@]}"; do
+  (( ${zsh_fn_helpers_skip[(Ie)$_zsh_fn]} )) && continue
+  _zsh_fn_path="$ZSH_FILES/$_zsh_fn"
+  if [ -f "$_zsh_fn_path" ]; then
+    source "$_zsh_fn_path"
   else
-    echo "not sure what happened with $HOME/$_zsh_helper"
+    echo "not sure what happened with ${_zsh_fn_path}"
   fi
 done
-unset _zsh_helper
+unset _zsh_fn _zsh_fn_path
 
 function reload_zsh_tools () {
   echo 'Deleteing and reinstalling ZSH tools. Please wait...'

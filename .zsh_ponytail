@@ -88,6 +88,7 @@ function install_ponytail() {
   echo ''
 }
 alias ponytail_install="install_ponytail"
+alias pti="install_ponytail"
 
 function update_ponytail() {
   echo ''
@@ -109,6 +110,7 @@ function update_ponytail() {
 }
 alias ponytail_update="update_ponytail"
 alias upony="update_ponytail"
+alias ptu="update_ponytail"
 
 function reload_ponytail() {
   echo ''
@@ -135,14 +137,17 @@ function reload_ponytail() {
   echo ''
 }
 alias ponytail_reload="reload_ponytail"
+alias ptr="reload_ponytail"
 
 function ponytails() {
   echo ''
   echo "******  Ponytail commands  **************************************"
-  echo "PONYTAIL_HOME = ${PONYTAIL_HOME}"
-  echo "install_ponytail / ponytail_install = clone + sync global skills/rules/hooks"
-  echo "update_ponytail  / ponytail_update  / upony = git pull + re-sync all targets"
-  echo "reload_ponytail  / ponytail_reload  = wipe checkout + managed copies, reinstall"
+  echo "PONYTAIL_HOME          = ${PONYTAIL_HOME}"
+  echo "install_ponytail (pti) = clone + sync global skills/rules/hooks"
+  echo "update_ponytail  (ptu) = git pull + re-sync all targets"
+  echo "reload_ponytail  (ptr) = wipe checkout + managed copies, reinstall"
   echo "Also run from: update"
   echo ''
 }
+alias ponytaili="ponytails"
+alias ptinfo="ponytails"
