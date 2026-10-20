@@ -14,11 +14,11 @@ SPACESHIP_NODE_SHOW=true
 SPACESHIP_BATTERY_SHOW=false
 SPACESHIP_PROMPT_ASYNC=false
 
-# SPACESHIP
-source $(brew --prefix)/opt/spaceship/spaceship.zsh
-
-# BREW
+# BREW — must be before anything that calls brew / Homebrew paths
 eval "$(/opt/homebrew/bin/brew shellenv)"
+
+# SPACESHIP
+source "$(brew --prefix)/opt/spaceship/spaceship.zsh"
 
 # RBENV
 export RBENV_ROOT="${HOME}/.rbenv"
