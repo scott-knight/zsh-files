@@ -20,9 +20,8 @@ function install_rbenv () {
 function install_rbenv_plugins () {
   cd $HOME && mkdir $HOME/.rbenv/plugins &&
   git clone https://github.com/rbenv/ruby-build.git "$(rbenv root)"/plugins/ruby-build &&
-  git clone https://github.com/scott-knight/rbenv-gemset.git "$(rbenv root)"/plugins/rbenv-gemset &&
+  git clone https://github.com/jf/rbenv-gemset.git "$(rbenv root)"/plugins/rbenv-gemset &&
   git clone https://github.com/rkh/rbenv-use.git "$(rbenv root)/plugins/rbenv-use" &&
-  git clone https://github.com/scott-knight/rbenv-bundle-exec.git "$(rbenv root)/plugins/rbenv-bundle-exec" &&
   cd $HOME/.rbenv && cd $HOME
 }
 
