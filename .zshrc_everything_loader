@@ -85,26 +85,25 @@ function install_zsh_tools () {
 }
 
 function update_zsh_autosuggestions () {
-  CURR_DIR="$PWD" &&
+  local curr="$PWD"
   echo ""
   echo 'Updating zsh-autosuggestions, please wait...'
-  cd $HOME/.zsh/zsh-autosuggestions && git pull &&
-  cd "$CURR_DIR"
+  { cd $HOME/.zsh/zsh-autosuggestions && git pull; }
+  cd "$curr"
   echo "Done updating zsh-autosuggestions!"
 }
 
 function update_zsh_syntax_highlighting () {
-  CURR_DIR="$PWD" &&
+  local curr="$PWD"
   echo ""
   echo 'Updating zsh-syntax-highlighting, please wait...'
-  cd $HOME/.zsh/zsh-syntax-highlighting && git pull &&
-  cd "$CURR_DIR"
+  { cd $HOME/.zsh/zsh-syntax-highlighting && git pull; }
+  cd "$curr"
   echo "Done updating zsh-syntax-highlighting!"
 }
 
 function update_zsh_tools () {
-  CURR_DIR="$PWD" &&
-  update_zsh_autosuggestions &&
+  update_zsh_autosuggestions
   update_zsh_syntax_highlighting
 }
 

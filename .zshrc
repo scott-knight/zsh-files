@@ -33,11 +33,11 @@ export PATH="$HOME/.local/bin:$PATH"
 # load variables
 export RUBY_CONFIGURE_OPTS="--with-libyaml-dir=$(brew --prefix libyaml)"
 
-if [ -f "$ZSH_FILES/.zshrc_loader" ]; then
-  source "$ZSH_FILES/.zshrc_loader"
-  echo "using $ZSH_FILES/.zshrc_loader"
+if [ -f "$ZSH_FILES/.zshrc_everything_loader" ]; then
+  echo "using $ZSH_FILES/.zshrc_everything_loader"
+  source "$ZSH_FILES/.zshrc_everything_loader"
 else
-  echo "not sure what happened with $ZSH_FILES/.zshrc_loader"
+  echo "not sure what happened with $ZSH_FILES/.zshrc_everything_loader"
 fi
 
 source $HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh

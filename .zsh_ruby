@@ -37,52 +37,42 @@ function reload_rbenv () {
 }
 
 function update_rbenv () {
-  CURR_DIR="$PWD" &&
+  local curr="$PWD"
   echo ""
   echo 'Updating RBENV, please wait...'
-  cd "$(rbenv root)" && git pull &&
-  cd "$CURR_DIR"
-  echo "Done updating RBENV!" &&
-  update_ruby_build &&
-  update_rbenv_gemset &&
-  update_rbenv_use &&
-  update_rbenv_bundle_exec
+  { cd "$(rbenv root)" && git pull; }
+  cd "$curr"
+  echo "Done updating RBENV!"
+  update_ruby_build
+  update_rbenv_gemset
+  update_rbenv_use
 }
 
 function update_ruby_build () {
-  CURR_DIR="$PWD" &&
+  local curr="$PWD"
   echo ""
   echo 'Updating ruby-build, please wait...'
-  cd "$(rbenv root)"/plugins/ruby-build && git pull &&
-  cd "$CURR_DIR"
+  { cd "$(rbenv root)"/plugins/ruby-build && git pull; }
+  cd "$curr"
   echo "Done updating ruby-build!"
 }
 
 function update_rbenv_gemset () {
-  CURR_DIR="$PWD" &&
+  local curr="$PWD"
   echo ""
   echo 'Updating rbenv-gemset, please wait...'
-  cd "$(rbenv root)"/plugins/rbenv-gemset && git pull &&
-  cd "$CURR_DIR"
+  { cd "$(rbenv root)"/plugins/rbenv-gemset && git pull; }
+  cd "$curr"
   echo "Done updating rbenv-gemset!"
 }
 
 function update_rbenv_use () {
-  CURR_DIR="$PWD" &&
+  local curr="$PWD"
   echo ""
   echo 'Updating rbenv-use, please wait...'
-  cd "$(rbenv root)"/plugins/rbenv-use && git pull &&
-  cd "$CURR_DIR"
+  { cd "$(rbenv root)"/plugins/rbenv-use && git pull; }
+  cd "$curr"
   echo "Done updating rbenv-use!"
-}
-
-function update_rbenv_bundle_exec () {
-  CURR_DIR="$PWD" &&
-  echo ""
-  echo 'Updating rbenv-bundle-exec, please wait...'
-  cd "$(rbenv root)"/plugins/rbenv-bundle-exec && git pull &&
-  cd "$CURR_DIR"
-  echo "Done updating rbenv-bundle-exec!"
 }
 
 function rbenvi () {

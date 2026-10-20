@@ -4,8 +4,8 @@ export ZSH_FILES="${ZSH_FILES:-$HOME/scott.projects/zsh-files}"
 
 for _zsh_boot in "$HOME/.zshrc_envs" "$ZSH_FILES/.zshrc"; do
   if [ -f "$_zsh_boot" ]; then
-    source "$_zsh_boot"
     echo "using ${_zsh_boot}"
+    source "$_zsh_boot"
   else
     echo "not sure what happened with ${_zsh_boot}"
   fi

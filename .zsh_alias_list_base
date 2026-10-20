@@ -5,7 +5,11 @@ alias ll='ls -FlaG'
 alias reload='exec zsh -l'
 alias home='cd ~'
 alias dls="cd ~/Downloads"
-alias myip="curl https://ipecho.net/plain; echo"
+alias myip4='curl -4 -s https://ipinfo.io/ip; echo'
+alias myip6='curl -s https://v6.ipinfo.io/ip; echo'
+alias myips='echo "v4: $(curl -4 -s https://ipinfo.io/ip)"; echo "v6: $(curl -s https://v6.ipinfo.io/ip)"'
+alias myip="curl -s 'https://ipinfo.io?utm_source=ipecho.net&utm_medium=referral&utm_campaign=upsell_sister_sites'"
+alias ip=myip
 alias ehosts="sudo vim /private/etc/hosts"
 
 # APPS
