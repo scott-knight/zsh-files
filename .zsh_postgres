@@ -1,0 +1,29 @@
+#! /bin/zsh
+
+# function export_staging () {
+#   pg_dump "$DATABASE_PUBLIC_STAGING_URL" \
+#     --no-owner --no-acl -Fc -v \
+#     -f $HOME/tmp/db_dumps/staging.dump
+# }
+
+# function export_prod () {
+#   pg_dump "$DATABASE_PUBLIC_PROD_URL" \
+#     --no-owner --no-acl -Fc -v \
+#     -f $HOME/tmp/db_dumps/prod.dump
+# }
+
+# function import_staging () {
+#   pg_restore \
+#   --verbose --no-owner --no-acl \
+#   --clean --if-exists \
+#   -d $STAGING_DB_URL \
+#   $HOME/tmp/db_dumps/staging.dump
+# }
+
+# function import_prod () {
+#   pg_restore \
+#   --verbose --no-owner --no-acl \
+#   --clean --if-exists \
+#   -d $PROD_DB_URL \
+#   $HOME/tmp/db_dumps/prod.dump
+# }
