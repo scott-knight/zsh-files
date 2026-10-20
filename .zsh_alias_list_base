@@ -47,7 +47,8 @@ alias gemenv="gem env home"                      # shows the current rubygems en
 alias gsi="rbenv gemset init \$1"                # allows you to create and set a gemset, ex: gsi rails5x
 alias gsc="rbenv gemset create \$(ruby_ver) \$1" # allows you to create a gemset, ex: gsc rails5x
 alias gsd="rbenv gemset delete \$(ruby_ver) \$1" # allows you to delete a gemset, ex: gsd rails5x
-alias gsadd="echo .gems > .ruby-gemset"             # creates a generic gemset file
+# Project gemset (.gems) + skip named "global" gemset. Core defaults still on GEM_PATH.
+alias gsadd='printf "%s\n" ".gems" "-global" > .ruby-gemset'
 alias rubyadd="echo \$1 > .ruby-version"         # allows you to set the desired ruby version, ex: rubyadd 2.3.1
 alias rmgems='echo Removing .rbenv-gemsets ; rm -rf .rbenv-gemsets'
 alias rbvdoc='curl -fsSL https://github.com/rbenv/rbenv-installer/raw/master/bin/rbenv-doctor | bash'

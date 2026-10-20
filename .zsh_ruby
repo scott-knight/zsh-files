@@ -13,8 +13,10 @@ function reload_gems () {
   delete_gems && bundle install
 }
 
-# Uninstall a gem from the default rbenv gemdir (not the project .gems gemset).
-# Usage: clean_gem rdoc
+# Remove a conflicting gem from the Ruby *core* gemdir only.
+# Project gemsets stay first on GEM_PATH; core defaults stay available.
+# Use this when junk was `gem install`ed into core and fights the gemset.
+# Usage: clean_gem some-conflicting-gem
 function clean_gem () {
   local name="$1"
   local gemdir
@@ -44,8 +46,25 @@ function install_rbenv_plugins () {
   git clone https://github.com/rbenv/ruby-build.git "$(rbenv root)"/plugins/ruby-build &&
   git clone https://github.com/jf/rbenv-gemset.git "$(rbenv root)"/plugins/rbenv-gemset &&
   git clone https://github.com/rkh/rbenv-use.git "$(rbenv root)/plugins/rbenv-use" &&
+  install_rbenv_gemset_filter &&
   cd $HOME/.rbenv && cd $HOME
 }
+
+# Gemset first; core still on GEM_PATH. Filter hides core junk not in Gemfile.lock.
+# Plugin name sorts after rbenv-gemset so the exec hook runs second.
+function install_rbenv_gemset_filter () {
+  local src="${ZSH_FILES:-$HOME/scott.projects/zsh-files}/rbenv-plugins/rbenv-gemset-filter"
+  local dest="$(rbenv root)/plugins/rbenv-gemsetz-filter"
+  if [[ ! -d "$src" ]]; then
+    echo "rbenv-gemset-filter source missing: $src" >&2
+    return 1
+  fi
+  rm -f "$(rbenv root)/plugins/rbenv-gemset/etc/rbenv.d/exec/zz-strict.bash"
+  rm -f "$(rbenv root)/plugins/rbenv-gemset-strict"
+  ln -sfn "$src" "$dest"
+  echo "linked $dest -> $src"
+}
+alias gemset_filter_install='install_rbenv_gemset_filter'
 
 function reload_rbenv () {
   echo 'Deleteing and reinstalling RBENV. Please wait...'
@@ -67,6 +86,7 @@ function update_rbenv () {
   update_ruby_build
   update_rbenv_gemset
   update_rbenv_use
+  install_rbenv_gemset_filter
 }
 
 function update_ruby_build () {
