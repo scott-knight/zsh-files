@@ -1,0 +1,5 @@
+#! /bin/zsh
+
+alias code='/Applications/Visual\ Studio\ Code.app/Contents/Resources/app/bin/code'
+alias vsc='code'
+alias vc='code'

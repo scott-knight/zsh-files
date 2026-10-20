@@ -1,0 +1,40 @@
+#! /bin/zsh
+
+alias erlang="echo Erlang version is: ; erl -eval 'erlang:display(erlang:system_info(otp_release)), halt().'  -noshell ; echo use the command erl to start the Erlang CLI"
+
+# npm aliases
+alias n="npm"
+alias ni="npm install"
+alias nci="npm ci"                            # frozen-lockfile equivalent
+alias na="npm install"                        # add prod dep:  na <pkg>
+alias nad="npm install -D"                    # add dev dep:   nad <pkg>
+alias nrm="npm uninstall"
+alias nr="npm run"                            # nr update-browserslist
+alias no="npm outdated"                       # read-only table
+alias nw="npm why"                            # who depends on X (npm 7+)
+alias nx="npx"                                # noop alias for parity
+
+# npm-check-updates (interactive bumps)
+alias ncu="npx npm-check-updates"             # show what would change
+alias ncui="npx npm-check-updates -i"         # interactive, package.json only
+alias ncuiu="npx npm-check-updates -i -u && npm install"  # interactive + apply
+
+function npminfo () {
+  echo ''
+  echo '******  PNPM  **************************************'
+  echo "n     = npm"
+  echo "ni    = npm install"
+  echo "nci   = npm ci"                            # frozen-lockfile equivalent
+  echo "na    = npm install"                        # add prod dep:  na <pkg>
+  echo "nad   = npm install -D"                    # add dev dep:   nad <pkg>
+  echo "nrm   = npm uninstall"
+  echo "nr    = npm run"                            # nr update-browserslist
+  echo "no    = npm outdated"                       # read-only table
+  echo "nw    = npm why"                            # who depends on X (npm 7+)"
+  echo "nx    = npx"                                # noop alias for parity
+  echo "ncu   = npx npm-check-updates"             # show what would change
+  echo "ncui  = npx npm-check-updates -i"         # interactive, package.json only
+  echo "ncuiu = npx npm-check-updates -i -u && npm install"  # interactive + apply
+}
+alias ninfo=npminfo
+alias npmi=npminfo

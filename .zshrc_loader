@@ -12,6 +12,7 @@
 # DB swap (rk): both DB helpers in the pack; inactive one in skip_for_rk.
 
 zsh_fn_base_helpers=(
+  .zsh_alias_list_base
   .zsh_ponytail
   .zsh_ruby
   .zsh_nvm
@@ -24,6 +25,7 @@ zsh_fn_helpers_skip=(
 )
 
 zsh_fn_helpers_for_rk=(
+  .zsh_alias_list_rk
   .zsh_podman
   .zsh_mysql57
   .zsh_riskonnect
@@ -36,6 +38,7 @@ zsh_fn_helpers_skip_for_rk=(
 )
 
 zsh_fn_helpers_for_sk=(
+  .zsh_alias_list_sk
   .zsh_postgres
   .zsh_things_to_do
 )
@@ -200,4 +203,4 @@ function bstop () {
   mystop
   echo "Done!\n"
 }
-alias stopall="bstart"
+alias stopall="bstop"

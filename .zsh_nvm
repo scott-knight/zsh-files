@@ -99,6 +99,10 @@ alias npmu="upgrade_npm"
 alias npm_update="upgrade_npm"
 alias npmupdate="upgrade_npm"
 
+# nvm
+alias nvms="nvm list"
+alias nvmlist="nvm ls-remote"
+
 function npms () {
   echo ''
   echo "******  NPM Update commands  **************************************"

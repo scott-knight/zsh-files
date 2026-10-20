@@ -1,5 +1,7 @@
 #! /bin/zsh
 
+# copy the contents of ~/.zshrc-copy-into-home into ~/.zshrc
+
 # SPACESHIP_USER_SHOW=always
 # SPACESHIP_DIR_TRUNC_PREFIX=../
 SPACESHIP_TIME_COLOR=blue
@@ -31,23 +33,12 @@ export PATH="$HOME/.local/bin:$PATH"
 # load variables
 export RUBY_CONFIGURE_OPTS="--with-libyaml-dir=$(brew --prefix libyaml)"
 
-# Sourced from $ZSH_FILES (set by ~/.zshrc). .zshrc_envs already loaded from $HOME.
-zsh_core_helpers=(
-  .zsh_alias_list
-  .zsh_functions
-)
-
-for _zsh_core in "${zsh_core_helpers[@]}"; do
-  _zsh_core_path="$ZSH_FILES/$_zsh_core"
-  if [ -f "$_zsh_core_path" ]; then
-    source "$_zsh_core_path"
-    echo "using ${_zsh_core_path}"
-  else
-    echo "not sure what happened with ${_zsh_core_path}"
-  fi
-done
-unset _zsh_core _zsh_core_path
-
+if [ -f "$ZSH_FILES/.zshrc_loader" ]; then
+  source "$ZSH_FILES/.zshrc_loader"
+  echo "using $ZSH_FILES/.zshrc_loader"
+else
+  echo "not sure what happened with $ZSH_FILES/.zshrc_loader"
+fi
 
 source $HOME/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
 source $HOME/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh

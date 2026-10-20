@@ -1,4 +1,4 @@
-#! /bundle exec zsh
+#! /bin/zsh
 
 # THINGS TO DO   ===============================================================================
 THINGSTODO=$HOME/dev.projects/things-to-do-app
@@ -29,12 +29,12 @@ function tdinfo () {
   echo "THINGSTODO    = $THINGSTODO"
   echo "alias tdserv  = td && rails s -b 0.0.0.0 -p 3000"
   echo "alias tdcon   = td && rails c"
-  echo "alias tddev   = td && bundle exec dev"
+  echo "alias tddev   = td && bin/dev"
   echo "alias tds     = tddev"
   echo "alias tdc     = tdcon"
   echo "alias tdtc    = td && open coverage/index.html"
-  echo "alias tdbc    = td && rails db:create db:schema:load db:migrate"
-  echo "alias tdbr    = td && rails db:drop db:create db:schema:load db:migrate"
+  echo "alias tddbc   = td && rails db:create db:schema:load db:migrate"
+  echo "alias tddbr   = td && rails db:drop db:create db:schema:load db:migrate"
   echo "alias tdcedit = td && VISUAL=\"code --wait\" bundle exec rails credentials:edit"
   echo "alias tdpurge = td && rails active_storage:purge_unattached"
   echo "alias tdps    = tdpurge"
