@@ -1,0 +1,42 @@
+#! /bundle exec zsh
+
+# THINGS TO DO   ===============================================================================
+THINGSTODO=$HOME/dev.projects/things-to-do-app
+alias td="cd $THINGSTODO"
+
+# RUN IT LOCALLY  ===================================================================
+alias tdserv="td && bundle exec rails s -b 0.0.0.0 -p 3000"
+alias tdcon="td && bundle exec rails c"
+alias tddev="td && bin/dev"
+alias tds="tddev"
+alias tdc="tdcon"
+alias tdtc="td && open coverage/index.html"
+alias tdui="td && npm outdated && npm update --loglevel verbose"
+alias tdpurge="td && bundle exec rails active_storage:purge_unattached"
+alias tdps="tdpurge"
+
+# RUN DB THINGS
+alias tddbc="td && bundle exec rails db:create db:schema:load db:migrate"
+alias tddbr="td && bundle exec rails db:drop db:create db:schema:load db:migrate"
+
+function tdcedit () {
+  td && VISUAL="code --wait" bundle exec rails credentials:edit
+}
+
+function tdinfo () {
+  echo ''
+  echo '******  PROJECT: THINGS TO DO  **************************************'
+  echo "THINGSTODO    = $THINGSTODO"
+  echo "alias tdserv  = td && rails s -b 0.0.0.0 -p 3000"
+  echo "alias tdcon   = td && rails c"
+  echo "alias tddev   = td && bundle exec dev"
+  echo "alias tds     = tddev"
+  echo "alias tdc     = tdcon"
+  echo "alias tdtc    = td && open coverage/index.html"
+  echo "alias tdbc    = td && rails db:create db:schema:load db:migrate"
+  echo "alias tdbr    = td && rails db:drop db:create db:schema:load db:migrate"
+  echo "alias tdcedit = td && VISUAL=\"code --wait\" bundle exec rails credentials:edit"
+  echo "alias tdpurge = td && rails active_storage:purge_unattached"
+  echo "alias tdps    = tdpurge"
+}
+alias tdi=tdinfo

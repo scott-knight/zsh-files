@@ -17,7 +17,6 @@ zsh_fn_base_helpers=(
   .zsh_nvm
   .zsh_git
   .zsh_redis
-  .zsh_podman
   .zsh_memcached
 )
 
@@ -25,14 +24,20 @@ zsh_fn_helpers_skip=(
 )
 
 zsh_fn_helpers_for_rk=(
+  .zsh_podman
   .zsh_mysql57
-  .zsh_mariadb10-5
   .zsh_riskonnect
+  .zsh_mariadb10-5
 )
 
 # Currently on MySQL 5.7 — skip MariaDB under rk. Flip to .zsh_mysql57 for MariaDB.
 zsh_fn_helpers_skip_for_rk=(
   .zsh_mariadb10-5
+)
+
+zsh_fn_helpers_for_sk=(
+  .zsh_postgres
+  .zsh_things_to_do
 )
 
 if [[ -n ${LOCAL_ENV:-} ]]; then

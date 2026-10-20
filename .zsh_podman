@@ -1,5 +1,7 @@
 #! /bin/zsh
 
+export PODMAN=/opt/homebrew/bin/podman
+
 # ##### Podman / Docker aliases #####
 
 alias pm="podman"
