@@ -13,6 +13,28 @@ function reload_gems () {
   delete_gems && bundle install
 }
 
+# Uninstall a gem from the default rbenv gemdir (not the project .gems gemset).
+# Usage: clean_gem rdoc
+function clean_gem () {
+  local name="$1"
+  local gemdir
+  if [[ -z "$name" ]]; then
+    echo "Usage: clean_gem <gem-name>" >&2
+    return 1
+  fi
+  gemdir="$(rbenv prefix)/lib/ruby/gems/$(ruby -e 'print Gem.ruby_api_version')"
+  if [[ ! -d "$gemdir" ]]; then
+    echo "Default gemdir not found: $gemdir" >&2
+    return 1
+  fi
+  echo "Uninstalling $name from $gemdir ..."
+  gem uninstall "$name" -a -i "$gemdir" --force --executables
+  echo "Done. Remaining $name:"
+  gem list "$name" -a
+}
+alias cleangem='clean_gem'
+alias delgem='clean_gem'
+
 function install_rbenv () {
   cd $HOME && git clone https://github.com/rbenv/rbenv.git $HOME/.rbenv
 }
