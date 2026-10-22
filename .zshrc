@@ -20,15 +20,15 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 # SPACESHIP
 source "$(brew --prefix)/opt/spaceship/spaceship.zsh"
 
+# export Paths
+export PATH="$(brew --prefix)/opt/curl/bin:$PATH"
+export PATH="$(brew --prefix)/opt/ruby/bin:$PATH"
+export PATH="$(brew --prefix)/opt/python/libexec/bin:$PATH"
+
 # RBENV
 export RBENV_ROOT="${HOME}/.rbenv"
 export PATH="${RBENV_ROOT}/bin:${RBENV_ROOT}/shims:$PATH"
 if which rbenv > /dev/null; then eval "$(${RBENV_ROOT}/bin/rbenv init - zsh)"; fi
-
-# export Paths
-export PATH="/opt/homebrew/opt/curl/bin:/opt/homebrew/opt/ruby/bin:$PATH"
-export PATH="$(brew --prefix)/opt/python/libexec/bin:$PATH"
-export PATH="$HOME/.local/bin:$PATH"
 
 # load variables
 export RUBY_CONFIGURE_OPTS="--with-libyaml-dir=$(brew --prefix libyaml)"
